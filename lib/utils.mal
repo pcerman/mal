@@ -1,0 +1,144 @@
+(defn memoize [fp]
+  (let [mem (atom {})]
+    (fn [& args]
+      (let [key (str args)]
+        (if (contains? @mem key)
+            (get @mem key)
+            (let [ret (apply fp args)]
+              (swap! mem assoc key ret)
+              ret))))))
+
+(defn partial [pfn & args]
+  (fn [& args-inner]
+    (apply pfn (concat args args-inner))))
+
+(defmacro compose [fn1 & fns]
+  (if (empty? fns) fn1
+    (let [cnt (count fns)]
+      (cond
+        (= cnt 1) `(fn [arg] (~fn1 (~(first fns) arg)))
+        (= cnt 2) `(fn [arg] (~fn1 (~(first fns) (~(nth fns 1) arg))))
+        :else     `(fn [arg] (~fn1 ((compose ~@fns) arg)))))))
+
+(defn comp [fn1 & fns]
+  (eval `(compose ~fn1 ~@fns)))
+
+(defn reverse [seq]
+  (if (vector? seq)
+    (foldr (fn [el va] (conj va el)) [] seq)
+    (foldl cons () seq)))
+
+(def reduce
+  (let [list-reduce
+        (fn [fp init xs]
+            (if (empty? xs)
+                init
+                (list-reduce fp (fp init (first xs)) (rest xs))))
+
+        vector-reduce
+        (fn [fp init xs idx len]
+            (if (>= idx len)
+                init
+                (vector-reduce fp (fp init (nth xs idx)) xs (inc idx) len)))]
+
+    (fn [fp init xs]
+        (if (vector? xs)
+            (vector-reduce fp init xs 0 (count xs))
+            (list-reduce fp init xs)))))
+
+(def foldl
+  (let [list-foldl
+        (fn [fp init xs]
+            (if (empty? xs)
+                init
+                (list-foldl fp (fp (first xs) init) (rest xs))))
+
+        vector-foldl
+        (fn [fp init xs idx len]
+            (if (>= idx len)
+                init
+                (vector-foldl fp (fp (nth xs idx) init) xs (inc idx) len)))]
+
+    (fn [fp init xs]
+        (if (vector? xs)
+            (vector-foldl fp init xs 0 (count xs))
+            (list-foldl fp init xs)))))
+
+(def foldr
+  (let [list-foldr
+        (fn [fp init xs]
+            (if (empty? xs) init
+                (list-foldr fp (fp (first xs) init) (rest xs))))
+
+        vector-foldr
+        (fn [fp init xs idx]
+            (if (< idx 0)
+                init
+                (vector-foldr fp (fp (nth xs idx) init) xs (dec idx))))]
+
+    (fn [fp init xs]
+        (if (vector? xs)
+            (vector-foldr fp init xs (dec (count xs)))
+            (list-foldr fp init (reverse xs))))))
+
+(def every?
+  (let [list-every?
+        (fn [fp? xs]
+            (or (empty? xs)
+                (and (fp? (first xs))
+                     (list-every? fp? (rest xs)))))
+
+        vector-every?
+        (fn [fp? xs idx len]
+            (or (>= idx len)
+                (and (fp? (nth xs idx))
+                     (vector-every? fp? xs (inc idx) len))))]
+    (fn [fp? xs]
+        (if (vector? xs)
+          (vector-every? fp? xs 0 (count xs))
+          (list-every? fp? xs)))))
+
+(defn not-every? [fp? xs]
+  (not (every? fp? xs)))
+
+(def some
+  (let [list-some
+        (fn [fp? xs]
+            (and (not (empty? xs))
+                 (or (fp? (first xs))
+                     (list-some fp? (rest xs)))))
+
+        vector-some
+        (fn [fp? xs idx len]
+            (and (< idx len)
+                 (or (fp? (nth xs idx))
+                     (vector-some fp? xs (inc idx) len))))]
+
+    (fn [fp? xs]
+      (if (vector? xs)
+        (vector-some fp? xs 0 (count xs))
+        (list-some fp? xs)))))
+
+(defn not-any? [fp? xs]
+  (not (some fp? xs)))
+
+(defn member [elm lst]
+  (if (empty? lst) nil
+      (if (= elm (first lst)) lst
+          (member elm (rest lst)))))
+
+(defmacro -> [va ex & exs]
+  (if (empty? exs)
+      (if (and (list? ex) (not (or (= (first ex) 'fn*)
+                                   (= (first ex) 'fn))))
+          `(~(first ex) ~va ~@(rest ex))
+          `(~ex ~va))
+      `(-> (-> ~va ~ex) ~@exs)))
+
+(defmacro ->> [va ex & exs]
+  (if (empty? exs)
+      (if (and (list? ex) (not (or (= (first ex) 'fn*)
+                                   (= (first ex) 'fn))))
+          `(~(first ex) ~@(rest ex) ~va)
+          `(~ex ~va))
+      `(->> (->> ~va ~ex) ~@exs)))

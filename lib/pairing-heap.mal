@@ -1,0 +1,31 @@
+;;; package: pairing-heap
+;;;
+;;; Implements pairing heap structure.
+;;; [https://en.wikipedia.org/wiki/Pairing_heap]
+
+;;; type PairingTree[Elem] = Heap(elem: Elem, subheaps: List[PairingTree[Elem]])
+;;; type PairingHeap[Elem] = Empty | PairingTree[Elem]
+
+(defn ph:merge [h1 h2]
+  (if (empty? h1) h2
+    (if (empty? h2) h1
+      (if (< (first (first h1)) (first (first h2)))
+        (conj (rest h1) h2 (first h1))
+        (conj (rest h2) h1 (first h2))))))
+
+(defn ph:insert [h k v]
+  (ph:merge (list (vector k v)) h))
+
+(defn ph:find-min [h]
+  (if (empty? h) nil
+    (first h)))
+
+(defn ph:merge-pairs [ls]
+  (if (empty? ls) ()
+    (if (empty? (rest ls)) (first ls)
+      (ph:merge (ph:merge (first ls) (nth ls 1))
+                (ph:merge-pairs (rest (rest ls)))))))
+
+(defn ph:remove-min [h]
+  (if (empty? h) ()
+    (ph:merge-pairs (rest h))))

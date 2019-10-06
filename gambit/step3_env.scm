@@ -1,0 +1,105 @@
+#!/usr/bin/env gsi
+
+(include "utils.scm")
+(include "env.scm")
+(include "types.scm")
+(include "reader.scm")
+(include "printer.scm")
+
+(define (READ str)
+  (read-str str))
+
+(define (eval-ast ast env)
+  (cond ((symbol? ast)
+             (env-get env ast))
+        ((pair? ast)
+             (map (lambda (elm) (EVAL elm env)) ast))
+        ((vector? ast)
+             (vector-map (lambda (elm) (EVAL elm env)) ast))
+        ((table? ast)
+             (list->table
+               (map (lambda (ap)
+                      (let ((key (EVAL (car ap) env)))
+                        (unless (or (string? key)
+                                    (integer? key)
+                                    (keyword? key)
+                                    (symbol? key))
+                          (error "hash-map - only string/integer/keyword/symbol is allowed for key"))
+                      (cons key (EVAL (cdr ap) env))))
+                    (table->list ast))
+               init: nil))
+        (else
+             ast)))
+
+(define (EVAL ast env)
+  (cond ((pair? ast)
+             (case (car ast)
+               ((def!)
+                    (unless (= (length ast) 3)
+                      (error "def! - syntax error"))
+                    (unless (symbol? (list-ref ast 1))
+                      (error "def! - symbol expected"))
+                    (let ((val (EVAL (list-ref ast 2) env)))
+                      (env-set! env (list-ref ast 1) val)
+                      val))
+               ((let*)
+                    (unless (= (length ast) 3)
+                      (error "let* - syntax error"))
+                    (let ((new-env (create-env env))
+                          (vars (list-ref ast 1)))
+                      (let loop ((vars (seq->list vars)))
+                        (cond ((null? vars)
+                                   (EVAL (list-ref ast 2) new-env))
+                              ((null? (cdr vars))
+                                   (error "let* - missing value for binding"))
+                              ((not (symbol? (car vars)))
+                                   (error "let* - symbol expected for binding"))
+                              (else
+                                   (env-set! new-env (car vars) (EVAL (list-ref vars 1) new-env))
+                                   (loop (cddr vars)))))))
+               (else
+                    (let ((val (eval-ast ast env)))
+                      (unless (procedure? (car val))
+                        (error "apply - function is expected"))
+                      (apply (car val) (cdr val))))))
+        (else
+             (eval-ast ast env))))
+
+(define (PRINT form)
+  (if (eof-object? form) form
+      (pr-str form)))
+
+(define (rep str env)
+  (-> str
+      READ
+      (EVAL env)
+      PRINT))
+
+(define (repl env)
+  (display "user> ")
+  (let ((str (read-line)))
+    (cond ((eof-object? str)  (newline))
+          ((equal? str "")    (repl env))
+          (else
+               (let ((val (with-exception-catcher
+                            (lambda (exc)
+                              (if (error-exception? exc)
+                                (display (sprint* "error: " (error-exception-message exc) "\n"))
+                                (pp exc)))
+                            (lambda ()
+                              (rep str env)))))
+                 (unless (or (eof-object? val) (void? val))
+                   (display val)
+                   (newline)))
+               (repl env)))))
+
+(define (make-top-env)
+  (let ((env (create-env)))
+    (env-set! env '+ +)
+    (env-set! env '- -)
+    (env-set! env '* *)
+    (env-set! env '/ /)
+    env))
+
+(define (main . argv)
+  (repl (make-top-env)))
