@@ -29,13 +29,14 @@
     (let loop ((i i) (cr #f))
       (if (>= i len) len
           (case (string-ref str i)
+            ((#\newline)
+                 (1+ i))
             ((#\return)
                  (if cr i
                    (loop (1+ i) #t)))
-            ((#\newline)
-                 (1+ i))
             (else
-                 (loop (1+ i) #f)))))))
+                 (if cr i
+                   (loop (1+ i) #f))))))))
 
 (define (skip-string str i)
   (let ((len (string-length str)))
