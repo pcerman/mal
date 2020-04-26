@@ -581,6 +581,8 @@ namespace Mal
             }
             else
             {
+                Rep("(println (str \"Mal [\" *host-language* \"]\"))", env);
+
                 for (; ;)
                 {
                     try
