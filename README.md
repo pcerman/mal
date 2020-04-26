@@ -2,9 +2,9 @@
 
 This is implementation of the [mal](https://github.com/kanaka/mal) programming language. I have not merged it into original repository because csharp and scheme implementations are already there.
 
-This repository contains two implementations: one is implemented in [gambit scheme](http://gambitscheme.org), another one in [C# for dotnet core 2.0](https://dotnet.microsoft.com). I have developed them on **ubuntu mate** linux version 18.04.
+This repository contains three implementations: one is implemented in [gambit scheme](http://gambitscheme.org), second one in [C# for dotnet core 3.1](https://dotnet.microsoft.com) and third one in [Poly/ML](https://www.polyml.org). I have developed them on **ubuntu mate** linux version 18.04.
 
-Both implementations follows instructions in the ["The Make-A-Lisp Process"](https://github.com/kanaka/mal/blob/master/process/guide.md) guide but there are some differences from original:
+All implementations follows instructions in the ["The Make-A-Lisp Process"](https://github.com/kanaka/mal/blob/master/process/guide.md) guide but there are some differences from original:
 
 _**csharp**_
 
@@ -20,9 +20,14 @@ _**gambit**_
 * key for hash-map can be string, keyword, symbol and integer number
 * expression for the key of a hash-map is evaluated too. Therefor it is possible to write: `{(str 'a 'b) "qwerty"}`
 
-Both implementations have implemented some default macros for simplifying definitions (look into [defines.mal](https://github.com/pcerman/mal/blob/master/csharp/defines.mal) file)
+_**polyml**_
 
-Subfolder [lib](https://github.com/pcerman/mal/tree/master/lib) contains three files which implements some useful functions and macros. For example there are defined simple **trace** and **untrace** functions.
+* integer and real numbers are implemented
+* key for hash-map can be string, keyword and also symbol
+
+All implementations have implemented some default macros for simplifying definitions (look into [defines.mal](https://github.com/pcerman/mal/blob/master/csharp/defines.mal) file)
+
+Subfolder [lib](https://github.com/pcerman/mal/tree/master/lib) contains three files which implements some useful functions and macros. For example there are defined simple **trace** and **untrace** macros.
 
 ## License
 
