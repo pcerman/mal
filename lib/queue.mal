@@ -1,0 +1,31 @@
+(import "../lib/utils.mal")
+
+(def! queue-normalize (fn* [qh qt]
+  (with-meta
+    (if (empty? qh)
+      [(reverse qt) ()]
+      [qh qt])
+    '*queue-type*)))
+
+(def! queue:new (fn* []
+  (queue-normalize () ())))
+
+(def! queue? (fn* [obj]
+  (b/and (vector? obj)
+         (= (count obj) 2)
+         (= (meta obj) '*queue-type*))))
+
+(def! queue:empty? (fn* [que]
+  (empty? (nth que 0))))
+
+(def! queue:push (fn* [que elm]
+  (queue-normalize (nth que 0)
+                   (cons elm (nth que 1)))))
+
+(def! queue:deref (fn* [que]
+  (first (nth que 0))))
+
+(def! queue:pop (fn* [que]
+  (if (queue:empty? que) que
+    (queue-normalize (rest (nth que 0))
+                     (nth que 1)))))

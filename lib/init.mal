@@ -1,0 +1,114 @@
+(def! import
+  (let* [seen (atom {})]
+    (fn* [filename]
+      (if (not (contains? @seen filename))
+        (do
+          (swap! seen assoc filename nil)
+          (load-file filename))))))
+
+(def! PI  3.141592653589793238462643)
+(def! E   2.718281828459045235360287)
+(def! FI  1.618033988749894848204587)
+
+(def! golden-ratio FI)
+
+(def! identity (fn* [x]
+  x))
+
+(def! gensym
+  (let* [counter (atom 0)]
+    (fn* []
+      (symbol (str "GS~" (swap! counter + 1))))))
+
+(defmacro! time (fn* [exp]
+  (let* [start (gensym)
+         ret   (gensym)]
+    `(let* [~start (time-ms)
+            ~ret   ~exp]
+       (println "Elapsed time:" (- (time-ms) ~start) "ms")
+       ~ret))))
+
+(defmacro! when (fn* [tst body & rest]
+  (if (empty? rest)
+      `(if ~tst ~body)
+      `(if ~tst (do ~body ~@rest)))))
+
+(defmacro! unless (fn* [tst body & rest]
+  (if (empty? rest)
+    `(if ~tst nil ~body)
+    `(if ~tst nil (do ~body ~@rest)))))
+
+(defmacro! b/or (fn* [& xs]
+  (if (empty? xs) false
+    `(if ~(first xs) true (b/or ~@(rest xs))))))
+
+(defmacro! b/and (fn* [& xs]
+  (if (empty? xs) true
+    `(if ~(first xs) (b/and ~@(rest xs)) false))))
+
+(defmacro! or (fn* [& xs]
+  (if (empty? xs) false
+    (if (empty? (rest xs))
+      (first xs)
+      (let* [sym (gensym)]
+        `(let* [~sym ~(first xs)]
+           (if ~sym ~sym (or ~@(rest xs)))))))))
+
+(defmacro! and (fn* [& xs]
+  (if (empty? xs) true
+    (if (empty? (rest xs))
+      (first xs)
+      (let* [sym (gensym)]
+        `(let* [~sym ~(first xs)]
+           (if ~sym (and ~@(rest xs)) ~sym)))))))
+
+(defmacro! -> (fn* [va ex & exs]
+  (if (empty? exs)
+    (if (b/and (list? ex)
+               (not (b/or (= (first ex) 'fn*)
+                          (= (first ex) 'fn))))
+      `(~(first ex) ~va ~@(rest ex))
+      `(~ex ~va))
+    `(-> (-> ~va ~ex) ~@exs))))
+
+(defmacro! ->> (fn* [va ex & exs]
+  (if (empty? exs)
+    (if (b/and (list? ex)
+               (not (b/or (= (first ex) 'fn*)
+                          (= (first ex) 'fn))))
+      `(~(first ex) ~@(rest ex) ~va)
+      `(~ex ~va))
+    `(->> (->> ~va ~ex) ~@exs))))
+
+(defmacro! compose (fn* [& fns]
+  (let* [cnt (count fns)]
+    (cond
+      (= cnt 0)
+      `(fn* [x & xs] x)
+
+      (= cnt 1)
+      (first fns)
+
+      (= cnt 2)
+      `(fn* [& xs] (~(first fns) (apply ~(nth fns 1) xs)))
+
+      (= cnt 3)
+      `(fn* [& xs] (~(first fns)
+                    (~(nth fns 1)
+                      (apply ~(nth fns 2) xs))))
+
+      :else
+      `(fn* [& xs] (~(first fns) (apply (compose ~@(rest fns)) xs)))))))
+
+(def! partial (fn* [pfn & args]
+  (fn* [& args-inner]
+    (apply pfn (concat args args-inner)))))
+
+(def! inc (fn* [n]
+  (+ n 1)))
+
+(def! dec (fn* [n]
+  (- n 1)))
+
+(def! zero? (fn* [n]
+  (if (= n 0) true (= n 0.0))))

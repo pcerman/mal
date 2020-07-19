@@ -33,9 +33,23 @@ _**polyml**_
 * key for hash-map can be string, keyword, symbol and integer number
 * AVL tree is used for hashmap
 
-All implementations have implemented some default macros for simplifying definitions (look into [defines.mal](https://github.com/pcerman/mal/blob/master/csharp/defines.mal) file)
+All implementations are trying to load **.malrc** file in the current directory at the start of the intepreter.
+There are symbolic links _.malrc_ into _../lib/init.mal_ file in all four implementations.
 
-Subfolder [lib](https://github.com/pcerman/mal/tree/master/lib) contains three files which implements some useful functions and macros. For example there are defined simple **trace** and **untrace** macros.
+Subfolder [lib](https://github.com/pcerman/mal/tree/master/lib) contains several mal libraries
+
+* [defines.mal](https://github.com/pcerman/mal/blob/master/lib/defines.mal) \
+  implements macros which simplify definitions to be more like clojure expressons
+* [pairing-heap.mal](https://github.com/pcerman/mal/blob/master/lib/pairing-heap.mal) \
+  implements pairing heap suitable for functional languages
+* [queue.mal](https://github.com/pcerman/mal/blob/master/lib/queue.mal) \
+  implements queue in functional style
+* [utils.mal](https://github.com/pcerman/mal/blob/master/lib/utils.mal) \
+  some usefull sequence functions
+* [trace.mal](https://github.com/pcerman/mal/blob/master/lib/trace.mal) \
+  definition of simple **trace** and **untrace** macros
+* [init.mal](https://github.com/pcerman/mal/blob/master/lib/utils.mal) \
+  to this file are linked symbolic links from all four implementations therefor. It is loaded at the start of the interpreter.
 
 ## License
 

@@ -1,0 +1,18 @@
+(defmacro! fn (fn* [args body & rest]
+  (if (empty? rest)
+    `(fn* ~args ~body)
+    `(fn* ~args (do ~body ~@rest)))))
+
+(defmacro! let (fn* [vars body & rest]
+  (if (empty? rest)
+    `(let* ~vars ~body)
+    `(let* ~vars (do ~body ~@rest)))))
+
+(defmacro! defmacro (fn* [name args & body]
+  `(defmacro! ~name (fn ~args ~@body))))
+
+(defmacro def [& args]
+  `(def! ~@args))
+
+(defmacro defn [name args & body]
+  `(def! ~name (fn ~args ~@body)))

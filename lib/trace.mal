@@ -1,47 +1,42 @@
-(def *trace* (atom {}))
-(def *trace-level* (atom 0))
-(def trace:get get)
-(def trace:cons cons)
+(def! *trace* (atom {}))
+(def! *trace-level* (atom 0))
+(def! trace:get get)
+(def! trace:cons cons)
 
-(defn make-list [n val]
+(def! make-list (fn* [n val]
   (if (<= n 0) ()
-      (trace:cons val (make-list (dec n) val))))
+    (trace:cons val (make-list (dec n) val)))))
 
-(defn perm [n]
-  (if (< n 2) 1
-    (* n (perm (dec n)))))
-
-
-(defn trace-level [prompt fun]
+(def! trace-level (fn* [prompt fun]
   (str (apply str ";; trace: " (make-list @*trace-level* "  "))
        prompt
        " "
        fun
-       ":"))
+       ":")))
 
-(defmacro trace [f]
+(defmacro! trace (fn* [f]
   (cond (trace:get @*trace* f)
-          true
+         true
 
         (fn? (eval f))
-          (let [val (gensym)
-                fun (gensym)]
-            (swap! *trace* assoc f (eval f))
-            `(do (defn ~f [& args]
-                   (let [~fun (trace:get @*trace* '~f)]
-                     (println (trace-level "-->" '~f) (apply pr-str args))
-                     (swap! *trace-level* + 1)
-                     (let [~val (apply ~fun args)]
-                       (swap! *trace-level* - 1)
-                       (println (trace-level "<--" '~f) (pr-str ~val))
-                       ~val)))
-                 '~f))
+        (let* [val (gensym)
+               fun (gensym)]
+          (swap! *trace* assoc f (eval f))
+          `(do (def! ~f (fn* [& args]
+                 (let* [~fun (trace:get @*trace* '~f)]
+                   (println (trace-level "-->" '~f) (apply pr-str args))
+                   (swap! *trace-level* + 1)
+                   (let* [~val (apply ~fun args)]
+                     (swap! *trace-level* - 1)
+                     (println (trace-level "<--" '~f) (pr-str ~val))
+                     ~val))))
+               '~f))
 
-        :else false))
+        :else false)))
 
-(defmacro untrace [f]
-  (let [fun (trace:get @*trace* f)]
+(defmacro! untrace (fn* [f]
+  (let* [fun (trace:get @*trace* f)]
     (when fun
       (swap! *trace* dissoc f)
-      `(do (def ~f ~fun)
-           `~f))))
+      `(do (def! ~f ~fun)
+           `~f)))))
