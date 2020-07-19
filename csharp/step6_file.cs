@@ -6,15 +6,66 @@ using System.IO;
 
 namespace Mal
 {
-    internal class Step6
+    internal class MAL
     {
-        Value READ(string arg)
+        static int Main(string[] args)
+        {
+            Env env = CreateTopLevelEnv();
+
+            List<Value> malArgs = new List<Value>();
+            for (int i=1; i < args.Length; i++)
+                malArgs.Add(new Str(args[i]));
+
+            env.Set(Reader.AddSymbol("*ARGV*") as Symbol, new List(malArgs));
+
+            if (args.Length == 0)
+                return Repl(env);
+
+#if NATIVE_LOAD_FILE
+            FileInfo fi = new FileInfo(args[0]);
+            if (fi.Exists)
+            {
+                using (Stream stream = fi.OpenRead())
+                    LoadStream(stream, env);
+            }
+            else
+            {
+                Console.Error.WriteLine("ERROR: unable open file '{0}'", args[0]);
+                return 1;
+            }
+#else
+            List loaderArgs = new List(new List<Value>() { new Str(args[0]) });
+            try
+            {
+                var val = env.Get(Reader.Load_file);
+                if (val is Closure cls)
+                {
+                    EVAL(cls.Body, cls.CreateEnv(loaderArgs));
+                }
+                else
+                if (val is Func_Native fn)
+                {
+                    fn.Apply(loaderArgs);
+                }
+                else
+                    throw new MalException("unknown function to evaluate file");
+            }
+            catch (MalException ex)
+            {
+                Console.Error.WriteLine("ERROR: {0}", ex.Message);
+                return 1;
+            }
+#endif
+            return 0;
+        }
+
+        static Value READ(string arg)
         {
             reader.Set(arg);
             return reader.Read_form();
         }
 
-        Value EVAL(Value arg, Env env)
+        static Value EVAL(Value arg, Env env)
         {
             for (;;)
             {
@@ -151,17 +202,17 @@ namespace Mal
             }
         }
 
-        string PRINT(Value arg)
+        static string PRINT(Value arg)
         {
             return Printer.Pr_str(arg, true);
         }
 
-        string Rep(string arg, Env env)
+        static string Rep(string arg, Env env)
         {
             return PRINT(EVAL(READ(arg), env));
         }
 
-        Value Eval_ast(Value arg, Env env)
+        static Value Eval_ast(Value arg, Env env)
         {
             if (env == null)
                 return arg;
@@ -214,15 +265,9 @@ namespace Mal
             return arg;
         }
 
-        Env CreateTopLevelEnv()
+        static Env CreateTopLevelEnv()
         {
             Env env = new Env();
-
-            List<Value> args = new List<Value>();
-            foreach (string arg in Program.gArgv)
-                args.Add(new Str(arg));
-
-            env.Set(Reader.AddSymbol("*ARGV*") as Symbol, new List(args));
 
             EnvAddFunction(env,
                 new Func_Add(),
@@ -272,78 +317,50 @@ namespace Mal
                 env.Set(Reader.AddSymbol(fn.FnName) as Symbol, fn);
         }
 
-        internal void Repl()
-        {
-            Env env = CreateTopLevelEnv();
-
-            if (!string.IsNullOrEmpty(Program.gArg_File))
-            {
 #if NATIVE_LOAD_FILE
-                try
-                {
-                    FileInfo fi = new FileInfo(Program.gArg_File);
-                    using (Stream stream = fi.OpenRead())
-                    {
-                        Reader reader = new Reader(stream);
-
-                        for (; ;)
-                        {
-                            var form = reader.Read_form();
-                            if (form == null)
-                                break;
-                            EVAL(form, env);
-                        }
-                    }
-                }
-                catch (MalException ex)
-                {
-                    Console.WriteLine("ERROR: {0}", ex.Message);
-                }
-#else
-                List args = new List(new List<Value>() { new Str(Program.gArg_File) });
-                try
-                {
-                    var val = env.Get(Reader.Load_file);
-                    if (val is Closure cls)
-                    {
-                        EVAL(cls.Body, cls.CreateEnv(args));
-                    }
-                    else
-                    if (val is Func_Native fn)
-                    {
-                        fn.Apply(args);
-                    }
-                    else
-                        throw new MalException("unknown function to evaluate file");
-                }
-                catch (MalException ex)
-                {
-                    Console.WriteLine("ERROR: {0}", ex.Message);
-                }
-#endif
-            }
-            else
+        static void LoadStream(Stream stream, Env env)
+        {
+            try
             {
+                Reader reader = new Reader(stream);
                 for (; ;)
                 {
-                    try
-                    {
-                        Console.Write("user> ");
-                        var str = Console.ReadLine();
-                        if (str == null)
-                            break;
-                        var val = Rep(str, env);
-                        if (val != null)
-                            Console.WriteLine(val);
-                    }
-                    catch (MalException ex)
-                    {
-                        Console.WriteLine("ERROR: {0}", ex.Message);
-                    }
+                    var form = reader.Read_form();
+                    if (form == null)
+                        break;
+                    EVAL(form, env);
                 }
             }
+            catch (MalException ex)
+            {
+                Console.WriteLine("ERROR: {0}", ex.Message);
+            }
+        }
+#endif
+
+        internal static int Repl(Env env)
+        {
+            for (; ;)
+            {
+                try
+                {
+                    Console.Write("user> ");
+                    var str = Console.ReadLine();
+                    if (str == null)
+                        break;
+                    var val = Rep(str, env);
+                    if (val != null)
+                        Console.WriteLine(val);
+                }
+                catch (MalException ex)
+                {
+                    Console.WriteLine("ERROR: {0}", ex.Message);
+                }
+            }
+
+            return 0;
         }
 
-        private readonly Reader reader = new Reader("");
+        private static readonly Reader reader = new Reader("");
     }
 }

@@ -55,6 +55,37 @@ namespace Mal
         protected abstract Value Apply_TwoArgs(Value arg1, Value arg2);
     }
 
+    internal class Func_Int : Func_OneArg
+    {
+        internal Func_Int() : base("int") { }
+
+        protected override Value Apply_OneArg(Value arg)
+        {
+            if (arg is Integer)
+                return arg;
+
+            if (arg is Real _rv)
+                return new Integer(_rv.Int);
+
+            throw Error("number is expected");
+        }
+    }
+
+    internal class Func_Real : Func_OneArg
+    {
+        internal Func_Real() : base("real") { }
+
+        protected override Value Apply_OneArg(Value arg)
+        {
+            if (arg is Integer _iv)
+                return new Real(_iv.Dbl);
+
+            if (arg is Real)
+                return arg;
+
+            throw Error("number is expected");
+        }
+    }
 
     internal class Func_Add : Func_Native
     {
@@ -737,12 +768,12 @@ namespace Mal
             for (int i = 0; i < cnt; i += 2)
             {
                 Value key = args.Nth(i);
-                if (key is Symbol || key is Keyword || key is Str)
+                if (key is Symbol || key is Keyword || key is Str || key is Integer)
                 {
                     dic.Add(key, args.Nth(i + 1));
                 }
                 else
-                    throw Expected("symbol/keyword/string", i + 1);
+                    throw Expected("string/symbol/keyword/integer", i + 1);
             }
 
             return hm;
@@ -758,21 +789,17 @@ namespace Mal
             if (arg is Str str)
             {
                 string cstr = str.Value;
-                if (string.IsNullOrWhiteSpace(cstr))
-                    cstr = ":";
-                else
-                {
-                    for (int i = 0; i < cstr.Length; i++)
-                    {
-                        if (Reader.IsNonAtomChar(cstr[i]))
-                            throw Error("invalid character");
-                    }
+                if (string.IsNullOrEmpty(cstr))
+                    throw Error("non empty string is required");
 
-                    if (cstr.Length == 0 || cstr[0] != ':')
-                        cstr = ":" + cstr;
+                for (int i = 0; i < cstr.Length; i++)
+                {
+                     if (Reader.IsNonAtomChar(cstr[i]))
+                         throw Error($"invalid character: '{cstr[i]}'");
                 }
 
-                return Reader.AddSymbol(cstr);
+                return cstr.StartsWith(':') ? Reader.AddSymbol(cstr)
+                                            : Reader.AddSymbol(':' + cstr);
             }
 
             if (arg is Keyword)
@@ -791,20 +818,24 @@ namespace Mal
             if (arg is Str str)
             {
                 string cstr = str.Value;
-                if (!string.IsNullOrWhiteSpace(cstr))
-                {
-                    for (int i = 0; i < cstr.Length; i++)
-                    {
-                        if (Reader.IsNonAtomChar(cstr[i]))
-                            throw Error("invalid character");
-                    }
-                }
 
-                if (cstr.Length == 0)
+                if (string.IsNullOrEmpty(cstr))
                     throw Error("non empty string is required");
 
-                if (cstr[0] == ':')
-                    throw Error("invalid character");
+                if (cstr.StartsWith(':'))
+                    throw Error("invalid first character: ':'");
+
+                for (int i = 0; i < cstr.Length; i++)
+                {
+                     if (Reader.IsNonAtomChar(cstr[i]))
+                         throw Error($"invalid character: '{cstr[i]}'");
+                }
+
+                if (Reader.IsInteger(cstr) || Reader.IsReal(cstr) ||
+                    cstr == "true" || cstr == "false" || cstr == "nil")
+                {
+                    throw Error($"invalid name for symbol: '{cstr}'");
+                }
 
                 return Reader.AddSymbol(cstr);
             }
@@ -830,12 +861,12 @@ namespace Mal
                 for (int i = 1; i < cnt; i += 2)
                 {
                     Value key = args.Nth(i);
-                    if (key is Symbol || key is Keyword || key is Str)
+                    if (key is Symbol || key is Keyword || key is Str || key is Integer)
                     {
                         dic[key] = args.Nth(i + 1);
                     }
                     else
-                        throw Expected("symbol/keyword/string", i + 1);
+                        throw Expected("string/symbol/keyword/integer", i + 1);
                 }
 
                 return hm;
@@ -860,12 +891,12 @@ namespace Mal
                 for (int i = 1; i < cnt; i++)
                 {
                     Value key = args.Nth(i);
-                    if (key is Symbol || key is Keyword || key is Str)
+                    if (key is Symbol || key is Keyword || key is Str || key is Integer)
                     {
                         dic.Remove(key);
                     }
                     else
-                        throw Expected("symbol/keyword/string", i + 1);
+                        throw Expected("string/symbol/keyword/integer", i + 1);
                 }
 
                 return hm;
@@ -1155,7 +1186,7 @@ namespace Mal
                 if (prompt == null)
                     prompt = "";
 
-                string line = MAL.Readline(prompt);
+                string line = Reader.Readline(prompt);
 
                 return line == null ? (Value)Reader.Nil : new Str(line);
             }

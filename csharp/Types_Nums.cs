@@ -16,13 +16,13 @@ namespace Mal
                 if (v is Integer int2)
                     return int1.Num == int2.Num;
 
-                if (v is Real r2)
-                    return int1.Num == r2.Num;
+                //if (v is Real r2)
+                //    return int1.Num == r2.Num;
             }
             else if (this is Real r1)
             {
-                if (v is Integer int2)
-                    return r1.Num == int2.Num;
+                //if (v is Integer int2)
+                //    return r1.Num == int2.Num;
 
                 if (v is Real r2)
                     return r1.Num == r2.Num;

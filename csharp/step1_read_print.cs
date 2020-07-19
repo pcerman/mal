@@ -2,27 +2,32 @@ using System;
 
 namespace Mal
 {
-    internal class Step1
+    internal class MAL
     {
-        Value READ(string arg)
+        static int Main(string[] args)
+        {
+            return Repl();
+        }
+
+        static Value READ(string arg)
         {
             reader.Set(arg);
             return reader.Read_form();
         }
 
-        Value EVAL(Value arg) => arg;
+        static Value EVAL(Value arg) => arg;
 
-        string PRINT(Value arg)
+        static string PRINT(Value arg)
         {
             return Printer.Pr_str(arg, true);
         }
 
-        string Rep(string arg)
+        static string Rep(string arg)
         {
             return PRINT(EVAL(READ(arg)));
         }
 
-        internal void Repl()
+        internal static int Repl()
         {
             for (; ;)
             {
@@ -41,8 +46,10 @@ namespace Mal
                     Console.WriteLine("ERROR: {0}", ex.Message);
                 }
             }
+
+            return 0;
         }
 
-        private readonly Reader reader = new Reader("");
+        private static readonly Reader reader = new Reader("");
     }
 }

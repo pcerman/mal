@@ -2,20 +2,25 @@ using System;
 
 namespace Mal
 {
-    internal class Step0
+    internal class MAL
     {
-        string READ(string arg) => arg;
+        static int Main(string[] args)
+        {
+            return Repl();
+        }
 
-        string EVAL(string arg) => arg;
+        static string READ(string arg) => arg;
 
-        string PRINT(string arg) => arg;
+        static string EVAL(string arg) => arg;
 
-        string Rep(string arg)
+        static string PRINT(string arg) => arg;
+
+        static string Rep(string arg)
         {
             return PRINT(EVAL(READ (arg)));
         }
 
-        internal void Repl()
+        internal static int Repl()
         {
             for (; ;)
             {
@@ -25,6 +30,8 @@ namespace Mal
                     break;
                 Console.WriteLine(Rep(str));
             }
+
+            return 0;
         }
     }
 }

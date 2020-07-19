@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Mal
 {
@@ -58,6 +59,12 @@ namespace Mal
 
     internal class Reader
     {
+        static internal string Readline(string prompt)
+        {
+            Console.Write(prompt);
+            return Console.ReadLine();
+        }
+
         static Reader()
         {
             Symbols = new Dictionary<string, Value>
@@ -219,7 +226,7 @@ namespace Mal
                     }
 
                 case '"':
-                    token = token.Substring(1, token.Length - 2);
+                    token = token[1..^1];
                     token = token.Replace("\\\\", "\u0001");
                     token = token.Replace("\\\"", "\"");
                     token = token.Replace("\\n", "\n");
@@ -316,8 +323,8 @@ namespace Mal
                 if (key == null)
                 {
                     key = Read_form();
-                    if (!(key is Symbol || key is Keyword || key is Str))
-                        throw new MalException("hash-map - invalid type for key", pos);
+                    if (!(key is Symbol || key is Keyword || key is Str || key is Integer))
+                        throw new MalException("hash-map - string/symbol/keyword/integer is expected for key", pos);
                 }
                 else
                 {
@@ -335,9 +342,7 @@ namespace Mal
                 return val;
 
             if (token[0] == ':')
-            {
                 val = new Keyword(token);
-            }
             else
                 val = new Symbol(token);
 
@@ -353,98 +358,17 @@ namespace Mal
 
         #region tokens predicates
 
-        static bool IsInteger(string token)
+        static Regex isInteger = new Regex("^[+-]?\\d+$");
+        static Regex isReal = new Regex("^[+-]?(?:\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?$");
+
+        internal static bool IsInteger(string token)
         {
-            bool has_digit = false;
-
-            int i = IsSignChar(token[0]) ? 1 : 0;
-            for (; i < token.Length; i++)
-            {
-                if (!IsDigitChar(token[i]))
-                    return false;
-                has_digit = true;
-            }
-
-            return has_digit;
+            return isInteger.IsMatch(token);
         }
 
-        enum State { beg, dig1, dot, dot1, dig2, exp, sign, dig3 };
-
-        static bool IsReal(string token)
+        internal static bool IsReal(string token)
         {
-            int i = IsSignChar(token[0]) ? 1 : 0;
-
-            State state = State.beg;
-
-            for (; i < token.Length; i++)
-            {
-                char ch = token[i];
-                switch (ch)
-                {
-                    case '.':
-                        switch (state)
-                        {
-                            case State.beg:  state = State.dot;  break;
-                            case State.dig1: state = State.dot1; break;
-                            default: return false;
-                        }
-                        break;
-
-                    case 'e':
-                    case 'E':
-                        switch (state)
-                        {
-                            case State.dig1:
-                            case State.dig2:
-                            case State.dot1: state = State.exp; break;
-                            default: return false;
-                        }
-                        break;
-
-                    case '+':
-                    case '-':
-                        switch (state)
-                        {
-                            case State.exp: state = State.sign; break;
-                            default: return false;
-                        }
-                        break;
-
-                    default:
-                        if (IsDigitChar(ch))
-                        {
-                            switch (state)
-                            {
-                                case State.dig1:
-                                case State.dig2:
-                                case State.dig3: break;
-
-                                case State.beg:  state = State.dig1; break;
-
-                                case State.dot:
-                                case State.dot1: state = State.dig2; break;
-
-                                case State.exp:
-                                case State.sign: state = State.dig3; break;
-
-                                default: return false;
-                            }
-                        }
-                        else
-                            return false;
-                        break;
-                }
-            }
-
-            switch (state)
-            {
-                case State.dig1:
-                case State.dig2:
-                case State.dig3:
-                case State.dot1:
-                    return true;
-            }
-            return false;
+            return isReal.IsMatch(token);
         }
 
         #endregion
@@ -478,7 +402,7 @@ namespace Mal
 
                 char ch = (char)data;
 
-                if (ch == '\n')
+                if (ch == '\r' || ch == '\n')
                 {
                     in_comment = false;
                     continue;
@@ -597,16 +521,6 @@ namespace Mal
                 || "()[]{}'`;\"".Contains(ch);
         }
 
-        static bool IsDigitChar(char ch)
-        {
-            return char.IsDigit(ch);
-        }
-
-        static bool IsSignChar(char ch)
-        {
-            return ch == '+' || ch == '-';
-        }
-
         private Stack<string> cur_token;
         private Position pos_token;
 
@@ -623,15 +537,16 @@ namespace Mal
         {
             int ch = reader.Read();
 
-            if (ch == '\r' || ch == '\n')
+            if (ch == '\r')
             {
-                if (ch == '\r')
+                if (reader.Peek() != '\n')
                 {
-                    if (reader.Peek() == '\n')
-                        reader.Read();
-                    ch = '\n';
+                    pos.Row++;
+                    pos.Col = 0;
                 }
-
+            }
+            else if (ch == '\n')
+            {
                 pos.Row++;
                 pos.Col = 0;
             }
@@ -649,22 +564,22 @@ namespace Mal
         internal static Constant Nil { get; } = new Constant("nil");
         internal static Constant True { get; } = new Constant("true");
         internal static Constant False { get; } = new Constant("false");
-        internal static Constant Quote { get; } = new Constant("quote");
-        internal static Constant Quasiquote { get; } = new Constant("quasiquote");
-        internal static Constant Unquote { get; } = new Constant("unquote");
-        internal static Constant Splice_unquote { get; } = new Constant("splice-unquote");
+        internal static Symbol Quote { get; } = new Symbol("quote");
+        internal static Symbol Quasiquote { get; } = new Symbol("quasiquote");
+        internal static Symbol Unquote { get; } = new Symbol("unquote");
+        internal static Symbol Splice_unquote { get; } = new Symbol("splice-unquote");
         internal static Symbol Deref { get; } = new Symbol("deref");
         internal static Symbol With_meta { get; } = new Symbol("with-meta");
-        internal static Constant Def { get; } = new Constant("def!");
-        internal static Constant Let { get; } = new Constant("let*");
-        internal static Constant Fn { get; } = new Constant("fn*");
+        internal static Symbol Def { get; } = new Symbol("def!");
+        internal static Symbol Let { get; } = new Symbol("let*");
+        internal static Symbol Fn { get; } = new Symbol("fn*");
         internal static Symbol Amp { get; } = new Symbol("&");
-        internal static Constant If { get; } = new Constant("if");
-        internal static Constant Do { get; } = new Constant("do");
+        internal static Symbol If { get; } = new Symbol("if");
+        internal static Symbol Do { get; } = new Symbol("do");
         internal static Symbol Load_file { get; } = new Symbol("load-file");
-        internal static Constant Defmacro { get; } = new Constant("defmacro!");
-        internal static Constant Macroexpand { get; } = new Constant("macroexpand");
-        internal static Constant Try { get; } = new Constant("try*");
-        internal static Constant Catch { get; } = new Constant("catch*");
+        internal static Symbol Defmacro { get; } = new Symbol("defmacro!");
+        internal static Symbol Macroexpand { get; } = new Symbol("macroexpand");
+        internal static Symbol Try { get; } = new Symbol("try*");
+        internal static Symbol Catch { get; } = new Symbol("catch*");
     }
 }

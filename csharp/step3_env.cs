@@ -5,13 +5,20 @@ namespace Mal
 {
     internal class Step3
     {
-        Value READ(string arg)
+        static int Main(string[] args)
+        {
+            Env env = CreateTopLevelEnv();
+
+            return Repl(env);
+        }
+
+        static Value READ(string arg)
         {
             reader.Set(arg);
             return reader.Read_form();
         }
 
-        Value EVAL(Value arg, Env env)
+        static Value EVAL(Value arg, Env env)
         {
             if (arg is List lst)
             {
@@ -81,17 +88,17 @@ namespace Mal
                 return Eval_ast(arg, env);
         }
 
-        string PRINT(Value arg)
+        static string PRINT(Value arg)
         {
             return Printer.Pr_str(arg, true);
         }
 
-        string Rep(string arg, Env env)
+        static string Rep(string arg, Env env)
         {
             return PRINT(EVAL(READ(arg), env));
         }
 
-        Value Eval_ast(Value arg, Env env)
+        static Value Eval_ast(Value arg, Env env)
         {
             if (env == null)
                 return arg;
@@ -144,7 +151,7 @@ namespace Mal
             return arg;
         }
 
-        Env CreateTopLevelEnv()
+        static Env CreateTopLevelEnv()
         {
             Env env = new Env();
 
@@ -156,10 +163,8 @@ namespace Mal
             return env;
         }
 
-        internal void Repl()
+        internal static int Repl(Env env)
         {
-            Env env = CreateTopLevelEnv();
-
             for (; ;)
             {
                 try
@@ -177,8 +182,10 @@ namespace Mal
                     Console.WriteLine("ERROR: {0}", ex.Message);
                 }
             }
+
+            return 0;
         }
 
-        private readonly Reader reader = new Reader("");
+        private static readonly Reader reader = new Reader("");
     }
 }

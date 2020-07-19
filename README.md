@@ -10,10 +10,9 @@ All implementations follows instructions in the ["The Make-A-Lisp Process"](http
 
 _**csharp**_
 
-* only one application is created which implements all steps. It recognizes argument -step. For example: `./run -step step1`
-* integer and real numbers are implemented
+* integer and real numbers are implemented also with predicate and conversion functions.
 * **quit** function is implemented
-* key for hash-map can be string, keyword and also symbol
+* key for hash-map can be string, keyword, symbol and integer
 * symbols are unique - for every unique **symbol name** only one **Symbol** object is created
 
 _**gambit**_
@@ -24,7 +23,7 @@ _**gambit**_
 
 _**polyml**_
 
-* integer and real numbers are implemented with predicate and conversion functions.
+* integer and real numbers are implemented also with predicate and conversion functions.
 * key for hash-map can be string, keyword, symbol and integer
 
 All implementations have implemented some default macros for simplifying definitions (look into [defines.mal](https://github.com/pcerman/mal/blob/master/csharp/defines.mal) file)

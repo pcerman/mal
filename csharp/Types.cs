@@ -305,7 +305,7 @@ namespace Mal
 
         internal bool IsEmpty()
         {
-            return Value == null ? true : Value.Length == 0;
+            return Value == null || Value.Length == 0;
         }
 
         internal int Length()

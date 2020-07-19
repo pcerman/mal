@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Core.cs" Link="Core.cs" />
+    <Compile Include="..\Env.cs" Link="Env.cs" />
+    <Compile Include="..\Printer.cs" Link="Printer.cs" />
+    <Compile Include="..\Reader.cs" Link="Reader.cs" />
+    <Compile Include="..\step7_quote.cs" Link="step7_quote.cs" />
+    <Compile Include="..\Types.cs" Link="Types.cs" />
+    <Compile Include="..\Types_Nums.cs" Link="Types_Nums.cs" />
+    <Compile Include="..\Types_Seqs.cs" Link="Types_Seqs.cs" />
+  </ItemGroup>
+
+</Project>

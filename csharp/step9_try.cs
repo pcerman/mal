@@ -7,15 +7,66 @@ using System.Reflection;
 
 namespace Mal
 {
-    internal class Step9
+    internal class MAL
     {
-        Value READ(string arg)
+        static int Main(string[] args)
+        {
+            Env env = CreateTopLevelEnv();
+
+            List<Value> malArgs = new List<Value>();
+            for (int i=1; i < args.Length; i++)
+                malArgs.Add(new Str(args[i]));
+
+            env.Set(Reader.AddSymbol("*ARGV*") as Symbol, new List(malArgs));
+
+            if (args.Length == 0)
+                return Repl(env);
+
+#if NATIVE_LOAD_FILE
+            FileInfo fi = new FileInfo(args[0]);
+            if (fi.Exists)
+            {
+                using (Stream stream = fi.OpenRead())
+                    LoadStream(stream, env);
+            }
+            else
+            {
+                Console.Error.WriteLine("ERROR: unable open file '{0}'", args[0]);
+                return 1;
+            }
+#else
+            List loaderArgs = new List(new List<Value>() { new Str(args[0]) });
+            try
+            {
+                var val = env.Get(Reader.Load_file);
+                if (val is Closure cls)
+                {
+                    EVAL(cls.Body, cls.CreateEnv(loaderArgs));
+                }
+                else
+                if (val is Func_Native fn)
+                {
+                    fn.Apply(loaderArgs);
+                }
+                else
+                    throw new MalException("unknown function to evaluate file");
+            }
+            catch (MalException ex)
+            {
+                Console.Error.WriteLine("ERROR: {0}", ex.Message);
+                return 1;
+            }
+#endif
+            return 0;
+        }
+
+        static Value READ(string arg)
         {
             reader.Set(arg);
             return reader.Read_form();
         }
 
-        Value EVAL(Value arg, Env env)
+        static Value EVAL(Value arg, Env env)
         {
             for (;;)
             {
@@ -38,6 +89,12 @@ namespace Mal
                         if (val is Symbol sym)
                         {
                             val = EVAL(lst.Nth(2), env);
+                            if (val is Closure cls && cls.IsMacro)
+                            {
+                                cls = cls.Clone(null) as Closure;
+                                cls.IsMacro = false;
+                                val = cls;
+                            }
                             env.Set(sym, val);
 
                             return val;
@@ -141,7 +198,7 @@ namespace Mal
                     else if (val == Reader.Quasiquote)
                     {
                         if (lst.Count() != 2)
-                            throw new MalException(Reader.Quote.Name + " - syntax error");
+                            throw new MalException(Reader.Quasiquote.Name + " - syntax error");
 
                         return QQuote(lst.Nth(1), env);
                     }
@@ -157,8 +214,9 @@ namespace Mal
                             val = EVAL(lst.Nth(2), env);
                             if (val is Closure cls)
                             {
+                                cls = cls.Clone(null) as Closure;
                                 cls.IsMacro = true;
-                                env.Set(sym, val);
+                                env.Set(sym, cls);
 
                                 return val;
                             }
@@ -252,10 +310,13 @@ namespace Mal
             }
         }
 
-        Value QQuote(Value val, Env env)
+        static Value QQuote(Value val, Env env)
         {
             if (val is Vector vec)
             {
+                if (vec.IsEmpty())
+                    return vec;
+
                 return QQuote(vec.Drop(0), env);
             }
 
@@ -306,7 +367,7 @@ namespace Mal
                                 qqlst = qqlst.Cons(QQuote(elm, env));
                         }
                         else
-                            qqlst = qqlst.Cons(elm);
+                            qqlst = qqlst.Cons(QQuote(elm, env));
                     }
 
                     return qqlst;
@@ -316,7 +377,7 @@ namespace Mal
             return val;
         }
 
-        Closure IsMacroCall(Value val, Env env)
+        static Closure IsMacroCall(Value val, Env env)
         {
             if (val is Symbol sym)
             {
@@ -327,7 +388,7 @@ namespace Mal
             return null;
         }
 
-        Value MACROEXPAND(Value ast, Env env)
+        static Value MACROEXPAND(Value ast, Env env)
         {
             for (; ; )
             {
@@ -346,17 +407,17 @@ namespace Mal
             return ast;
         }
 
-        string PRINT(Value arg)
+        static string PRINT(Value arg)
         {
             return Printer.Pr_str(arg, true);
         }
 
-        string Rep(string arg, Env env)
+        static string Rep(string arg, Env env)
         {
             return PRINT(EVAL(READ(arg), env));
         }
 
-        Value Eval_ast(Value arg, Env env)
+        static Value Eval_ast(Value arg, Env env)
         {
             if (env == null)
                 return arg;
@@ -409,15 +470,9 @@ namespace Mal
             return arg;
         }
 
-        Env CreateTopLevelEnv()
+        static Env CreateTopLevelEnv()
         {
             Env env = new Env();
-
-            List<Value> args = new List<Value>();
-            foreach (string arg in Program.gArgv)
-                args.Add(new Str(arg));
-
-            env.Set(Reader.AddSymbol("*ARGV*") as Symbol, new List(args));
 
             EnvAddFunction(env,
                 new Func_Add(),
@@ -477,16 +532,23 @@ namespace Mal
                 new Func_Throw()
             );
 
+            string expr = @"(do
+(def! not (fn* [x] (if x false true)))
+
+(defmacro! cond (fn* (& xs)
+  (if (> (count xs) 0)
+    (list 'if
+          (first xs)
+          (if (> (count xs) 1)
+             (nth xs 1)
+             (throw ""odd number of forms to cond""))
+          (cons 'cond (rest (rest xs)))))))
+)";
+            Rep(expr, env);
+
 #if !NATIVE_LOAD_FILE
             Rep("(def! load-file (fn* (f) (eval (read-string (str \"(do \" (slurp f) \"\nnil)\")))))", env);
 #endif
-
-            var assembly = typeof(Program).GetTypeInfo().Assembly;
-            using (var stream = assembly.GetManifestResourceStream("Mal.defines.mal"))
-            {
-                LoadStream(stream, env);
-            }
-
             return env;
         }
 
@@ -496,7 +558,8 @@ namespace Mal
                 env.Set(Reader.AddSymbol(fn.FnName) as Symbol, fn);
         }
 
-        void LoadStream(Stream stream, Env env)
+#if NATIVE_LOAD_FILE
+        static void LoadStream(Stream stream, Env env)
         {
             try
             {
@@ -514,65 +577,31 @@ namespace Mal
                 Console.WriteLine("ERROR: {0}", ex.Message);
             }
         }
+#endif
 
-        internal void Repl()
+        internal static int Repl(Env env)
         {
-            Env env = CreateTopLevelEnv();
-
-            if (!string.IsNullOrEmpty(Program.gArg_File))
+            for (; ;)
             {
-#if NATIVE_LOAD_FILE
-                FileInfo fi = new FileInfo(Program.gArg_File);
-                if (fi.Exists)
-                {
-                    using (Stream stream = fi.OpenRead())
-                        LoadStream(stream, env);
-                }
-#else
-                List args = new List(new List<Value>() { new Str(Program.gArg_File) });
                 try
                 {
-                    var val = env.Get(Reader.Load_file);
-                    if (val is Closure cls)
-                    {
-                        EVAL(cls.Body, cls.CreateEnv(args));
-                    }
-                    else
-                    if (val is Func_Native fn)
-                    {
-                        fn.Apply(args);
-                    }
-                    else
-                        throw new MalException("unknown function to evaluate file");
+                    Console.Write("user> ");
+                    var str = Console.ReadLine();
+                    if (str == null)
+                        break;
+                    var val = Rep(str, env);
+                    if (val != null)
+                        Console.WriteLine(val);
                 }
                 catch (MalException ex)
                 {
                     Console.WriteLine("ERROR: {0}", ex.Message);
                 }
-#endif
             }
-            else
-            {
-                for (; ;)
-                {
-                    try
-                    {
-                        Console.Write("user> ");
-                        var str = Console.ReadLine();
-                        if (str == null)
-                            break;
-                        var val = Rep(str, env);
-                        if (val != null)
-                            Console.WriteLine(val);
-                    }
-                    catch (MalException ex)
-                    {
-                        Console.WriteLine("ERROR: {0}", ex.Message);
-                    }
-                }
-            }
+
+            return 0;
         }
 
-        private readonly Reader reader = new Reader("");
+        private static readonly Reader reader = new Reader("");
     }
 }
