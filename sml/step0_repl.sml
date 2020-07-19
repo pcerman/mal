@@ -1,3 +1,5 @@
+(***** step0_repl.sml *****)
+
 fun READ str = str
 fun EVAL ast env = ast
 fun PRINT ast = ast
@@ -11,10 +13,12 @@ fun repl env = (print "user> ";
 
 fun main() =
     let
-        val env = []
+        val env = ()
     in
         repl env;
         print "\n";
         OS.Process.exit (OS.Process.success);
         ()
     end
+
+val _ = main ()
