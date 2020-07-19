@@ -1,0 +1,43 @@
+--- Makefile	2020-07-19 18:59:25.762342517 +0200
++++ Makefile.new	2020-07-19 19:08:29.938364903 +0200
+@@ -89,12 +89,12 @@
+ # Implementation specific settings
+ #
+ 
+-IMPLS = ada ada.2 awk bash basic bbc-basic c chuck clojure coffee common-lisp cpp crystal cs d dart \
+-	elisp elixir elm erlang es6 factor fantom forth fsharp go groovy gnu-smalltalk \
++IMPLS = ada ada.2 awk bash basic bbc-basic c chuck clojure coffee common-lisp cpp crystal cs csharp cxx d dart \
++	elisp elixir elm erlang es6 factor fantom forth fsharp gambit go groovy gnu-smalltalk \
+ 	guile haskell haxe hy io java js jq julia kotlin livescript logo lua make mal \
+ 	matlab miniMAL nasm nim objc objpascal ocaml perl perl6 php picolisp pike plpgsql \
+ 	plsql powershell ps python python.2 r racket rexx rpython ruby rust scala scheme skew \
+-	swift swift3 swift4 swift5 tcl ts vala vb vhdl vimscript wasm wren yorick xslt zig
++	sml swift swift3 swift4 swift5 tcl ts vala vb vhdl vimscript wasm wren yorick xslt zig
+ 
+ EXTENSION = .mal
+ 
+@@ -199,6 +199,8 @@
+ cpp_STEP_TO_PROG =           impls/cpp/$($(1))
+ crystal_STEP_TO_PROG =       impls/crystal/$($(1))
+ cs_STEP_TO_PROG =            impls/cs/$($(1)).exe
++csharp_STEP_TO_PROG =        impls/csharp/$($(1))
++cxx_STEP_TO_PROG =           impls/cxx/$($(1))
+ d_STEP_TO_PROG =             impls/d/$($(1))
+ dart_STEP_TO_PROG =          impls/dart/$($(1)).dart
+ elisp_STEP_TO_PROG =         impls/elisp/$($(1)).el
+@@ -210,6 +212,7 @@
+ fantom_STEP_TO_PROG =        impls/fantom/lib/fan/$($(1)).pod
+ forth_STEP_TO_PROG =         impls/forth/$($(1)).fs
+ fsharp_STEP_TO_PROG =        impls/fsharp/$($(1)).exe
++gambit_STEP_TO_PROG =        impls/gambit/$($(1)).scm
+ go_STEP_TO_PROG =            impls/go/$($(1))
+ groovy_STEP_TO_PROG =        impls/groovy/$($(1)).groovy
+ gnu-smalltalk_STEP_TO_PROG = impls/gnu-smalltalk/$($(1)).st
+@@ -255,6 +258,7 @@
+ scala_STEP_TO_PROG =         impls/scala/target/scala-2.11/classes/$($(1)).class
+ scheme_STEP_TO_PROG =        $(scheme_STEP_TO_PROG_$(scheme_MODE))
+ skew_STEP_TO_PROG =          impls/skew/$($(1)).js
++sml_STEP_TO_PROG =           impls/sml/$($(1))
+ swift_STEP_TO_PROG =         impls/swift/$($(1))
+ swift3_STEP_TO_PROG =        impls/swift3/$($(1))
+ swift4_STEP_TO_PROG =        impls/swift4/$($(1))
