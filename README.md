@@ -12,19 +12,18 @@ _**csharp**_
 
 * integer and real numbers are implemented also with predicate and conversion functions.
 * **quit** function is implemented
-* key for hash-map can be string, keyword, symbol and integer
+* key for hash-map can be string, keyword, symbol and integer number
 * symbols are unique - for every unique **symbol name** only one **Symbol** object is created
 
 _**gambit**_
 
 * full numeric tower of the gambit language is used
 * key for hash-map can be string, keyword, symbol and integer number
-* expression for the key of a hash-map is evaluated too. Therefor it is possible to write: `{(str 'a 'b) "qwerty"}`
 
 _**polyml**_
 
 * integer and real numbers are implemented also with predicate and conversion functions.
-* key for hash-map can be string, keyword, symbol and integer
+* key for hash-map can be string, keyword, symbol and integer number
 
 All implementations have implemented some default macros for simplifying definitions (look into [defines.mal](https://github.com/pcerman/mal/blob/master/csharp/defines.mal) file)
 

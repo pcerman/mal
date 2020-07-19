@@ -19,7 +19,7 @@
         ((table? ast)
              (list->table
                (map (lambda (ap)
-                      (let ((key (EVAL (car ap) env)))
+                      (let ((key (car ap)))
                         (unless (or (string? key)
                                     (integer? key)
                                     (keyword? key)

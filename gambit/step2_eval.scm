@@ -19,7 +19,7 @@
         ((table? ast)
              (list->table
                (map (lambda (ap)
-                      (cons (EVAL (car ap) env) (EVAL (cdr ap) env)))
+                      (cons (car ap) (EVAL (cdr ap) env)))
                     (table->list ast))))
         (else
              ast)))

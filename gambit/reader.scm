@@ -169,8 +169,6 @@
 (define (read-atom token)
   (cond ((string->number token)
              => identity)
-        ((equal? token ":")
-             ':)
         ((eqv? (string-ref token 0) #\:)
              (-> (substring token 1 (string-length token))
                  string->keyword))

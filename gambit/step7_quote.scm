@@ -24,7 +24,8 @@
                                 '()
                                 ast))))
         ((vector? ast)
-             (QQUOTE (vector->list ast) env))
+             (if (zero? (vector-length ast)) ast
+               (QQUOTE (vector->list ast) env)))
         (else
              ast)))
 
@@ -38,7 +39,7 @@
         ((table? ast)
              (list->table
                (map (lambda (ap)
-                      (let ((key (EVAL (car ap) env)))
+                      (let ((key (car ap)))
                         (unless (or (string? key)
                                     (integer? key)
                                     (keyword? key)

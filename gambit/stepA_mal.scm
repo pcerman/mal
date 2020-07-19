@@ -41,7 +41,8 @@
                                 '()
                                 ast))))
         ((vector? ast)
-             (QQUOTE (vector->list ast) env))
+             (if (zero? (vector-length ast)) ast
+               (QQUOTE (vector->list ast) env)))
         (else
              ast)))
 
@@ -55,7 +56,7 @@
         ((table? ast)
              (list->table
                (map (lambda (ap)
-                      (let ((key (EVAL (car ap) env)))
+                      (let ((key (car ap)))
                         (unless (or (string? key)
                                     (integer? key)
                                     (keyword? key)
@@ -212,88 +213,23 @@
 
 (define macros #<<end-of-macros
 (do
-(defmacro! fn (fn* [args body & rest]
-  (if (empty? rest)
-    `(fn* ~args ~body)
-    `(fn* ~args (do ~body ~@rest)))))
+(def! *host-language* "gambit")
 
-(defmacro! let (fn* [vars body & rest]
-  (if (empty? rest)
-    `(let* ~vars ~body)
-    `(let* ~vars (do ~body ~@rest)))))
+(def! not (fn* [x]
+  (if x false true)))
 
-(defmacro! defmacro (fn* [name args & body]
-  `(defmacro! ~name (fn ~args ~@body))))
+(defmacro! cond (fn* [& xs]
+  (if (> (count xs) 0)
+    (list 'if (first xs)
+          (if (> (count xs) 1)
+              (nth xs 1)
+              (throw "odd number of forms to cond"))
+          (cons 'cond (rest (rest xs)))))))
 
-(defmacro def [& args]
-  `(def! ~@args))
+(def! load-file (fn* [f]
+  (eval (read-string (str "(do " (slurp f) "\nnil)")))))
 
-(defmacro defn [name args & body]
-  `(def! ~name (fn ~args ~@body)))
-
-(defn identity [x]
-  x)
-
-(def gensym
-  (let [counter (atom 0)]
-    (fn []
-      (symbol (str "G__" (swap! counter + 1))))))
-
-(defmacro time [exp]
-  (let [start (gensym)
-        ret   (gensym)]
-    `(let [~start (time-ms)
-           ~ret   ~exp]
-       (println "Elapsed time:" (- (time-ms) ~start) "ms")
-       ~ret)))
-
-(defmacro cond [& xs]
-  (let [cnt (count xs)]
-    (if (= cnt 0) nil
-      (if (< cnt 2)
-        (throw "cond - even number of forms is required")
-        `(if ~(first xs) ~(nth xs 1)
-           (cond ~@(rest (rest xs))))))))
-
-(defmacro when [tst body & rest]
-  (if (empty? rest)
-      `(if ~tst ~body)
-      `(if ~tst (do ~body ~@rest))))
-
-(defmacro unless [tst body & rest]
-  (if (empty? rest)
-    `(if ~tst nil ~body)
-    `(if ~tst nil (do ~body ~@rest))))
-
-(defmacro or [& xs]
-  (if (empty? xs)
-    false
-    (let [sym (gensym)]
-      `(let [~sym ~(first xs)]
-         (if ~sym ~sym (or ~@(rest xs)))))))
-
-(defmacro and [& xs]
-  (if (empty? xs) true
-    (if (empty? (rest xs))
-      `(do ~@xs)
-      `(if ~(first xs) (and ~@(rest xs)) false))))
-
-(defn not [x]
-  (if x false true))
-
-(defn inc [n]
-  (+ n 1))
-
-(defn dec [n]
-  (- n 1))
-
-(defn zero? [x]
-  (or (= x 0)
-      (= x 0.0)))
-
-(def! load-file
-  (fn* [f]
-    (eval (read-string (str "(do " (slurp f) "\nnil)")))))
+(try* (load-file ".malrc"))
 )
 end-of-macros
 )
@@ -301,7 +237,6 @@ end-of-macros
 (define (main . argv)
   (let ((env (make-top-env)))
     (env-set! env 'eval (lambda (ast) (EVAL ast env)))
-    (env-set! env '*host-language* "gambit")
     (env-set! env '*ARGV* (if (null? argv) argv (cdr argv)))
     (EVAL (read-str macros) env)
     (if (null? argv)

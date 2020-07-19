@@ -62,3 +62,13 @@
                              (display join port)
                              (display str port))
                            (cdr strs)))))))
+
+(define (string-any? fp str)
+  (let ((len (string-length str)))
+    (let loop ((i 0))
+      (cond ((>= i len)
+                 #f)
+            ((fp (string-ref str i))
+                 #t)
+            (else
+                 (loop (1+ i)))))))
