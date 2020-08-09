@@ -8,7 +8,7 @@ fun eval ast env =
            (* function apply *)
            (case eval_ast ast' env of
                 Mal.List (Mal.Function (_, f, _) :: args, _) => f args
-              | _ => Mal.error "function or closure is ecpected")
+              | _ => Mal.error "function or closure is expected")
      | ast' =>
            eval_ast ast' env
 

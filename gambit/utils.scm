@@ -72,3 +72,17 @@
                  #t)
             (else
                  (loop (1+ i)))))))
+
+(define (string-prefix? pre str)
+  (let ((lep (string-length pre))
+        (len (string-length str)))
+    (let loop ((i 0))
+      (cond ((>= i len)
+                 (>= i lep))
+            ((>= i lep)
+                 #t)
+            ((eqv? (string-ref str i)
+                   (string-ref pre i))
+                 (loop (1+ i)))
+            (else
+                 #f)))))

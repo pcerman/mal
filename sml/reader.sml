@@ -328,6 +328,9 @@ and read_form rdr =
                                    in
                                        (SOME (make_list3 Mal.With_meta frm2 frm1), rdr4)
                                    end
+                        | #")"  => Mal.error "unexpected token: )"
+                        | #"]"  => Mal.error "unexpected token: ]"
+                        | #"}"  => Mal.error "unexpected token: }"
                         | _     => (SOME (get_atom str), rdr2)
   end
 

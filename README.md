@@ -33,7 +33,7 @@ _**polyml**_
 * key for hash-map can be string, keyword, symbol and integer number
 * AVL tree is used for hashmap
 
-All implementations are trying to load **.malrc** file in the current directory at the start of the intepreter.
+All implementations are trying to load **.malrc** file in the current directory when intepreter is started.
 There are symbolic links _.malrc_ into _../lib/init.mal_ file in all four implementations.
 
 Subfolder [lib](https://github.com/pcerman/mal/tree/master/lib) contains several mal libraries
@@ -49,7 +49,8 @@ Subfolder [lib](https://github.com/pcerman/mal/tree/master/lib) contains several
 * [trace.mal](https://github.com/pcerman/mal/blob/master/lib/trace.mal) \
   definition of simple **trace** and **untrace** macros
 * [init.mal](https://github.com/pcerman/mal/blob/master/lib/utils.mal) \
-  to this file are linked symbolic links from all four implementations therefor. It is loaded at the start of the interpreter.
+  Symbolic file system links _.malrc_ are linked to this file in all four implementations.
+  Therefor this file is loaded when interpreter is started.
 
 ## License
 

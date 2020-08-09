@@ -87,7 +87,7 @@ fun eval ast env =
                     in eval_args vars rest args env env';
                        foldl (fn (exp,va) => eval exp env') Mal.Nil exps
                     end
-              | _ => Mal.error "function or closure is ecpected")
+              | _ => Mal.error "function or closure is expected")
      | ast' =>
            eval_ast ast' env
 
